@@ -3,22 +3,21 @@
   * @author Robert Chan | June 2016
   * @required Optimizely
 */
-
 (function(){
 	'use strict';
+	var experimentID  = ''; 
 	if(document.URL.indexOf('optimizely_x') > -1){
-		var experimentID  = '', 
-					oIdx  = document.URL.indexOf('optimizely_x'),
+				var oIdx  = document.URL.indexOf('optimizely_x'),
 					idSt  = oIdx+12, 
 					idEnd = oIdx+22, 
 					idIdx = oIdx+23;
 		if(experimentID === ''){
 			for(var i=idSt; i<idEnd; i++){ experimentID += document.URL[i]; }
-				experimentID = parseInt(experimentID)
+				experimentID = parseInt(experimentID);
 				console.log('This is experiment ID ' + typeof experimentID + ' ' + experimentID + ' running on variant index number ' + document.URL[parseInt(idIdx)]);
 		}
 	} else { console.log('Experiment ID not found. Please manually input it into experimentID to enable the use of this Optimizely template.'); }
-	if(experimentID>1 && experimentID != null){
+	if(experimentID>1 && experimentID !== null){
 		var dataSrc = optimizely.data.experiments[experimentID],
 			optTest = {
 				cookieObject: {
@@ -29,6 +28,7 @@
 				cssOn: true,
 				showCookiesOn: true,
 				debug: true,
+				jQueryOn: true,
 				experimentTitle: dataSrc.name,
 				init: function(){
 					if(optTest.debug){
@@ -40,7 +40,7 @@
 					}
 				},
 				cookies: function(fourthCall){
-					optTest.doCss(function(){
+					optTest.jqAlive(function(){
 						if ((navigator.cookieEnabled === true) && (optTest.cookiesOn === true)){
 							if(document.referrer === ''){
 								optTest.cookieBaker('CookieName', optTest.cookieObject, 30);
@@ -67,8 +67,9 @@
 				cookieKiller: function(name) {
 				 	document.cookie = [name, '=; expires=Thu, 01-Jan-1970 00:00:01 GMT; path=/; domain=.', window.location.host.toString()].join('');
 				},
-				doCss: function(thirdCall){
-					optTest.jqAlive(function(){
+				doCss: function(secondCall){
+					optTest.domLoaded(function(){
+						console.log('DOM ready');
 						if(optTest.cssOn){
 							var css    = 'body{display:none}',
 						        head   = document.head || document.getElementsByTagName('head')[0],
@@ -80,9 +81,11 @@
 							    	style.appendChild(document.createTextNode(css));
 							    }
 							    head.appendChild(style);
-							console.log('CSS on');
+							console.log('Custom variant-level CSS is on');
+						} else {
+							console.log('Custom variant-level CSS is off');
 						}
-					    thirdCall();
+					    secondCall();
 					});
 				},
 				domLoaded: function(firstCall){
@@ -92,23 +95,26 @@
 				        document.addEventListener("DOMContentLoaded", callback);
 				    }
 				},
-				jqAlive: function(secondCall){
-					optTest.domLoaded(function(){
-						console.log('DOM ready');
-						if((window.$ && $.isReady) || (window.jQuery && jQuery.isReady)) {
-							console.log('jQuery is present');
-						} else {
-							var js = document.createElement("script"),
-						    	he = document.getElementsByTagName('head')[0];
-							    js.type = "text/javascript";
-							    js.src = "http://code.jquery.com/jquery-3.0.0.min.js";
-							    he.appendChild(js);
-							    js.addEventListener("load", function () {
-							        console.log('jQuery is now a ' + typeof $);
-							    });
-							console.log('jQuery was not present, but has now been added');
+				jqAlive: function(thirdCall){
+					optTest.doCss(function(){
+						if(optTest.jQueryOn){
+							if((window.$ && $.isReady) || (window.jQuery && jQuery.isReady)) {
+								console.log('jQuery is present');
+								thirdCall();
+							} else {
+								var js = document.createElement("script"),
+							    	he = document.getElementsByTagName('head')[0];
+								    js.type = "text/javascript";
+								    js.src = "http://code.jquery.com/jquery-3.0.0.min.js";
+								    he.appendChild(js);
+								    js.addEventListener("load", function () {
+								        console.log('jQuery is now a ' + typeof $);
+								        thirdCall(); // Wait for jQuery to append before setting cookies
+								    });
+								console.log('jQuery was not present, but has now been added');
+							}
 						}
-						secondCall();
+						/*thirdCall(); //Set cookies agnostic to whether jQuery has been appended*/
 					});		
 				},
 				showCookies: function(fifthCall){
@@ -128,9 +134,10 @@
 				},
 				variant: function(){
 					optTest.showCookies(function(){
-						setTimeout(function(){
-							console.log('|||||| R U N || C O D E || H E R E ||||||');
-						}, 5000);
+						var navList = document.getElementsByClassName('navUtility-list');
+						for(var i=0; i<navList.length; i++){
+						  navList[i].remove();
+						}
 					});
 				}
 			};
