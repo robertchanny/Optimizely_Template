@@ -12,10 +12,12 @@
 					idSt  = oIdx+12, 
 					idEnd = oIdx+22, 
 					idIdx = oIdx+23;
-		for(var i=idSt; i<idEnd; i++){ experimentID += document.URL[i]; }
-			experimentID = parseInt(experimentID)
-			console.log('This is experiment ID ' + typeof experimentID + ' ' + experimentID + ' running on variant index number ' + document.URL[parseInt(idIdx)]);
-	} else { console.log('Experiment ID not found. Please manually input it into dataSrc to enable the use of this Optimizely template.'); }
+		if(experimentID === ''){
+			for(var i=idSt; i<idEnd; i++){ experimentID += document.URL[i]; }
+				experimentID = parseInt(experimentID)
+				console.log('This is experiment ID ' + typeof experimentID + ' ' + experimentID + ' running on variant index number ' + document.URL[parseInt(idIdx)]);
+		}
+	} else { console.log('Experiment ID not found. Please manually input it into experimentID to enable the use of this Optimizely template.'); }
 	if(experimentID>1 && experimentID != null){
 		var dataSrc = optimizely.data.experiments[experimentID],
 			optTest = {
